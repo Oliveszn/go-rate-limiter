@@ -1,0 +1,6 @@
+maintains a fixed capacity bucket where tokens are added at a fixed rate e.g one token per second 
+it initially stars full and are refilled at rate r tokens per second
+each incoming request requires a token, if a token is available, the request is processed and the token is removed from the bucket if no tokens are available the request is denied or delayed until tokens are available 
+
+more flexible than the other 2 because;
+it can accommodate sudden surges of traffic better, allows for burst of requests but still limits after the bucket is empty

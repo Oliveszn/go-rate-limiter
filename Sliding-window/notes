@@ -1,0 +1,12 @@
+in sliding window algorithm, along wit the benefits of fixed window it adds a rolling window of time that smooths out bursts of requests by adding a weighted count in previous window to the count in current window
+
+Its More efficient in terms of memory and processing 
+Avoids bursts of requests problem from fixed window 
+
+It uses a moving window to count requests over the last N seconds at any given point unlike the fixed timer in the fixed window 
+
+no abrubpt reset instead old requests slide out of the window as time progresses
+
+example: if the limit is 100 requests per minute the count always represents the number of requests in the last 60 seconds
+
+so this fixes the problem where an attacker times his requests at the edn of the reset because its always sliding there is no hard reset

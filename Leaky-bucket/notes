@@ -1,0 +1,2 @@
+similar to a token bucket, but the rate is limited by the amount that can drip or leak out of the bucket 
+Its normally used to rate limit requests to load balancers and disk i/o buffer

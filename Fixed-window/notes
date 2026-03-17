@@ -1,0 +1,11 @@
+In the fixed window algorithm requests are set per time frame
+e.g 2000 requests per hour
+100 requests per minute
+
+PROS
+Easy to implemnt and works quite well for apps where you have specific quotas for each endpoint
+
+CONS
+As the available quota resets, they are subject to spikes at the edges of the window
+
+which means you can make 2000 requests near the last 1 minute of the hour and when tthe hour expires you make another 2000 which resulsts in spike
