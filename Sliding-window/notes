@@ -1,12 +1,21 @@
-in sliding window algorithm, along wit the benefits of fixed window it adds a rolling window of time that smooths out bursts of requests by adding a weighted count in previous window to the count in current window
+// in sliding window algorithm, along wit the benefits of fixed window it adds a rolling window of time that smooths out bursts of requests by adding a weighted count in previous window to the count in current window
 
-Its More efficient in terms of memory and processing 
-Avoids bursts of requests problem from fixed window 
+// Its More efficient in terms of memory and processing
+// Avoids bursts of requests problem from fixed window
 
-It uses a moving window to count requests over the last N seconds at any given point unlike the fixed timer in the fixed window 
+// It uses a moving window to count requests over the last N seconds at any given point unlike the fixed timer in the fixed window
 
-no abrubpt reset instead old requests slide out of the window as time progresses
+// no abrubpt reset instead old requests slide out of the window as time progresses
 
-example: if the limit is 100 requests per minute the count always represents the number of requests in the last 60 seconds
+// example: if the limit is 100 requests per minute the count always represents the number of requests in the last 60 seconds
 
-so this fixes the problem where an attacker times his requests at the edn of the reset because its always sliding there is no hard reset
+// so this fixes the problem where an attacker times his requests at the edn of the reset because its always sliding there is no hard reset
+
+//key things
+
+// lua guarantees atomicity because redis is single threade, a lua script is treated as one indivisible command, the entire script runs beofre redis processes anything else
+//  You get read-modify-write safety without locks or transactions.
+
+//  EVAL vs EVALSHA: redis.NewScript() in go-redis handles this automatically. First call uses EVAL (sends the full script). Subsequent calls use EVALSHA (just sends the SHA hash of the script, which is much cheaper). If the SHA isn't cached on the server, it falls back to EVAL
+// The KEYS convention: Redis Cluster routes commands by key. The KEYS[1] argument tells Redis which slot this script touches, so it routes correctly in a clustered setup. If you ever hash multiple keys in one script in a cluster, they all need to be in the same slot, you'd use hash tags like {user:123}:rl to force co-location.
+// What the script returns: The array {1, remaining} or {0, 0, reset_epoch}, go-redis gives this back as []int64 via .Int64Slice(). The ResetAt lets your client know exactly how long to back off, which is what API clients use when they see a 429.
