@@ -1,6 +1,23 @@
-maintains a fixed capacity bucket where tokens are added at a fixed rate e.g one token per second 
+maintains a fixed capacity bucket where tokens are added at a fixed rate e.g one token per second
 it initially stars full and are refilled at rate r tokens per second
-each incoming request requires a token, if a token is available, the request is processed and the token is removed from the bucket if no tokens are available the request is denied or delayed until tokens are available 
+each incoming request requires a token, if a token is available, the request is processed and the token is removed from the bucket if no tokens are available the request is denied or delayed until tokens are available
 
 more flexible than the other 2 because;
 it can accommodate sudden surges of traffic better, allows for burst of requests but still limits after the bucket is empty
+
+key things
+
+Why HMGET/HSET (hash) instead of two separate keys: One round trip, one TTL to manage, one atomic read of both fields. If you stored tokens and last_refill as separate string keys, you'd need two GETs and could read them in an inconsistent state.
+
+Float timestamps, not integer: Passing now as UnixNano / 1e9 (a float like 1714823042.381) gives you millisecond-precision refill math inside Lua. If you used integer seconds, a bucket with rate=10 would only refill in whole-second jumps, clients making requests 800ms apart would see no refill at all
+
+The TTL choice: Set the key to expire after capacity/rate seconds of inactivity, that's how long it takes a fully-drained bucket to refill. No point keeping the key alive longer. In the code above window serves this purpose; in practice you'd pass capacity/rate as the TTL.
+
+Burst vs sustained: Token bucket naturally separates these two levers. capacity=50, rate=10/s means a client can fire 50 requests instantly (burst), then sustains at 10/s afterwards. Sliding window doesn't give you this — it's just a hard count in a window. That distinction is a great thing to bring up when asked to compare the two.
+
+interview talking points
+Token bucket vs sliding window: Token bucket is simpler and handles bursty traffic well (e.g. 100 req/min but allow up to 20 in one second). Sliding window is more accurate — no boundary bug — but costs more memory in Redis.
+The boundary bug (fixed window weakness): if your window resets every minute, a client can fire 100 requests at 11:59 and 100 more at 12:00 — getting 200 requests in a 2-second span. Sliding window eliminates this.
+Fail open vs fail closed: If your Redis goes down, do you allow requests or deny them? Most APIs fail open to avoid taking themselves down — the code above does this. Mention the tradeoff.
+Distributed systems concern: With in-memory limiting across multiple servers, each instance has its own counter. For multi-node deployments, you need Redis (or another shared store) with atomic operations. The Lua script approach is even safer for guaranteed atomicity.
+Key design: rl:{userID} per-user, rl:{ip} per-IP, rl:{apiKey}:{endpoint} per-key-per-route. Different limits per tier (free vs paid) just means instantiating different limiters and picking one based on the user's plan.
